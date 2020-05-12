@@ -4,6 +4,7 @@ import { Plugin, OutputBundle } from 'rollup'
 import { isStaticAsset } from '../utils'
 import hash_sum from 'hash-sum'
 import slash from 'slash'
+// @ts-ignore
 import mime from 'mime-types'
 
 const debug = require('debug')('vite:build:asset')
