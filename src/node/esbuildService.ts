@@ -75,14 +75,14 @@ export const transform = async (
     // if transpiling (j|t)sx file, inject the imports for the jsx helper and
     // Fragment.
     if (file.endsWith('x')) {
-      if (!jsxOption || jsxOption === 'vue') {
-        code +=
-          `\nimport { jsx } from '${vueJsxPublicPath}'` +
-          `\nimport { Fragment } from 'vue'`
-      }
-      if (jsxOption === 'preact') {
-        code += `\nimport { h, Fragment } from 'preact'`
-      }
+      // if (!jsxOption || jsxOption === 'vue') {
+      //   code +=
+      //     `\nimport { jsx } from '${vueJsxPublicPath}'` +
+      //     `\nimport { Fragment } from 'vue'`
+      // }
+      // if (jsxOption === 'preact') {
+      //   code += `\nimport { h, Fragment } from 'preact'`
+      // }
     }
 
     return {
