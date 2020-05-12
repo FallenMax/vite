@@ -11,6 +11,7 @@ import { jsonPlugin } from './serverPluginJson'
 import { cssPlugin } from './serverPluginCss'
 import { assetPathPlugin } from './serverPluginAssets'
 import { esbuildPlugin } from './serverPluginEsbuild'
+import { corsPlugin } from './serverPluginCors'
 import { ServerConfig } from '../config'
 import { createServerTransformPlugin } from '../transform'
 
@@ -30,7 +31,7 @@ export interface ServerPluginContext {
 export function createServer(config: ServerConfig = {}): Server {
   const {
     root = process.cwd(),
-    plugins = [],
+    plugins = [corsPlugin],
     resolvers = [],
     alias = {},
     transforms = []

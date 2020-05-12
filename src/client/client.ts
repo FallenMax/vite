@@ -5,8 +5,11 @@ console.log('[vite] connecting...')
 
 declare var __VUE_HMR_RUNTIME__: HMRRuntime
 
-const socketProtocol = location.protocol === 'https:' ? 'wss' : 'ws'
-const socket = new WebSocket(`${socketProtocol}://${location.host}`)
+// @ts-ignore
+const viteOrigin = new URL(window.__VITE_ORIGIN || window.location.origin)
+
+const socketProtocol = viteOrigin.protocol === 'https:' ? 'wss' : 'ws'
+const socket = new WebSocket(`${socketProtocol}://${viteOrigin.host}`)
 
 function warnFailedFetch(err: Error, path: string | string[]) {
   if (!err.message.match('fetch')) {
@@ -91,6 +94,13 @@ socket.addEventListener('close', () => {
   }, 1000)
 })
 
+const useViteOrigin = (url: string) => {
+  if (url.startsWith('/')) {
+    url = viteOrigin.origin + url
+  }
+  return url
+}
+
 export function updateStyle(id: string, url: string) {
   const linkId = `vite-css-${id}`
   let link = document.getElementById(linkId)
@@ -101,7 +111,7 @@ export function updateStyle(id: string, url: string) {
     link.setAttribute('type', 'text/css')
     document.head.appendChild(link)
   }
-  link.setAttribute('href', url)
+  link.setAttribute('href', useViteOrigin(url))
 }
 
 const jsUpdateMap = new Map<string, (timestamp: number) => void>()
