@@ -47,8 +47,11 @@ console.log('[vite] connecting...')
 
 declare var __VUE_HMR_RUNTIME__: HMRRuntime
 
-const socketProtocol = location.protocol === 'https:' ? 'wss' : 'ws'
-const socket = new WebSocket(`${socketProtocol}://${location.host}`)
+// @ts-ignore
+const viteHost = new URL(window.__VITE_HOST__ || window.location.origin)
+
+const socketProtocol = viteHost.protocol === 'https:' ? 'wss' : 'ws'
+const socket = new WebSocket(`${socketProtocol}://${viteHost.host}`)
 
 function warnFailedFetch(err: Error, path: string | string[]) {
   if (!err.message.match('fetch')) {
@@ -137,7 +140,7 @@ socket.addEventListener('message', async ({ data }) => {
 socket.addEventListener('close', () => {
   console.log(`[vite] server connection lost. polling for restart...`)
   setInterval(() => {
-    new WebSocket(`${socketProtocol}://${location.host}`).addEventListener(
+    new WebSocket(`${socketProtocol}://${viteHost.host}`).addEventListener(
       'open',
       () => {
         location.reload()
