@@ -1,7 +1,7 @@
 import path from 'path'
-import slash from 'slash'
 import qs, { ParsedUrlQuery } from 'querystring'
 import resolve from 'resolve'
+import slash from 'slash'
 import { supportedExts } from '../resolver'
 import { Context } from '../server'
 
@@ -60,6 +60,10 @@ const fontsRE = /\.(woff2?|eot|ttf|otf)(\?.*)?$/i
  */
 export const isStaticAsset = (file: string) => {
   return imageRE.test(file) || mediaRE.test(file) || fontsRE.test(file)
+}
+
+export const isImage = (file: string) => {
+  return imageRE.test(file)
 }
 
 /**

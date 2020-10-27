@@ -1,34 +1,37 @@
-import { ServerPlugin } from '.'
-import path from 'path'
+import chalk from 'chalk'
+import {
+  ImportSpecifier,
+  init as initLexer,
+  parse as parseImports
+} from 'es-module-lexer'
+import fs from 'fs'
 import LRUCache from 'lru-cache'
 import MagicString from 'magic-string'
-import {
-  init as initLexer,
-  parse as parseImports,
-  ImportSpecifier
-} from 'es-module-lexer'
+import mime from 'mime-types'
+import path from 'path'
+import { ServerPlugin } from '.'
 import {
   InternalResolver,
-  resolveBareModuleRequest,
-  jsSrcRE
+  jsSrcRE,
+  resolveBareModuleRequest
 } from '../resolver'
 import {
-  debugHmr,
-  importerMap,
-  importeeMap,
-  ensureMapEntry,
-  rewriteFileWithHMR,
-  hmrClientPublicPath,
-  hmrDirtyFilesMap,
-  latestVersionsMap
-} from './serverPluginHmr'
-import {
-  readBody,
   cleanUrl,
   isExternalUrl,
+  isImage,
+  readBody,
   resolveRelativeRequest
 } from '../utils'
-import chalk from 'chalk'
+import {
+  debugHmr,
+  ensureMapEntry,
+  hmrClientPublicPath,
+  hmrDirtyFilesMap,
+  importeeMap,
+  importerMap,
+  latestVersionsMap,
+  rewriteFileWithHMR
+} from './serverPluginHmr'
 
 const debug = require('debug')('vite:rewrite')
 
@@ -41,6 +44,7 @@ const rewriteCache = new LRUCache({ max: 1024 })
 //   inject `import.meta.hot` and track HMR boundary accept whitelists.
 // - Also tracks importer/importee relationship graph during the rewrite.
 //   The graph is used by the HMR plugin to perform analysis on file change.
+// - Inline static resource imported by js into base64 string if < X kB
 export const moduleRewritePlugin: ServerPlugin = ({
   root,
   app,
@@ -116,7 +120,8 @@ export function rewriteImports(
   try {
     let imports: ImportSpecifier[] = []
     try {
-      imports = parseImports(source)[0]
+      const result = parseImports(source)
+      imports = result[0]
     } catch (e) {
       console.error(
         chalk.yellow(
@@ -139,7 +144,13 @@ export function rewriteImports(
       importeeMap.set(importer, currentImportees)
 
       for (let i = 0; i < imports.length; i++) {
-        const { s: start, e: end, d: dynamicIndex } = imports[i]
+        const {
+          s: start,
+          ss: importStart,
+          e: end,
+          se: importEnd,
+          d: dynamicIndex
+        } = imports[i]
         let id = source.substring(start, end)
         let hasLiteralDynamicId = false
         if (dynamicIndex >= 0) {
@@ -163,7 +174,39 @@ export function rewriteImports(
             timestamp
           )
 
-          if (resolved !== id) {
+          // inline static asset
+          if (isImage(resolved)) {
+            const filePath = resolver.requestToFile(
+              resolved.replace(/\?.*$/, '')
+            )
+            if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+              const content = fs.readFileSync(filePath, { encoding: 'base64' })
+              debug(`    "${id}" --> (base64)`)
+
+              const importStatement = source.substring(importStart, importEnd)
+              const [_match, binding] =
+                /^import (?:(.*) from)?/.exec(importStatement) || []
+              if (!_match) {
+                throw new Error('unknown import statement: ' + importStatement)
+              }
+              if (!binding) {
+                throw new Error('no binding? :' + importStatement)
+              }
+              if (binding) {
+                const mimeType = mime.lookup(path.extname(filePath))
+                s.overwrite(
+                  importStart,
+                  importEnd,
+                  `const ${binding} = ${JSON.stringify(
+                    `data:${mimeType};base64,` + content
+                  )}`
+                )
+                hasReplaced = true
+              }
+            } else {
+              throw new Error('cannot access file: ' + filePath)
+            }
+          } else if (resolved !== id) {
             debug(`    "${id}" --> "${resolved}"`)
             s.overwrite(
               start,

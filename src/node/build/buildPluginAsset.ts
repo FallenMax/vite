@@ -1,10 +1,10 @@
-import path from 'path'
 import fs from 'fs-extra'
-import { Plugin, OutputBundle } from 'rollup'
-import { cleanUrl, isStaticAsset } from '../utils'
 import hash_sum from 'hash-sum'
-import slash from 'slash'
 import mime from 'mime-types'
+import path from 'path'
+import { OutputBundle, Plugin } from 'rollup'
+import slash from 'slash'
+import { cleanUrl, isStaticAsset } from '../utils'
 
 const debug = require('debug')('vite:build:asset')
 
@@ -60,7 +60,7 @@ export const resolveAsset = async (
 
     let url = slash(path.join(publicBase, assetsDir, resolvedFileName))
     const content = await fs.readFile(id)
-    if (!id.endsWith(`.svg`) && content.length < Number(inlineLimit)) {
+    if (content.length < Number(inlineLimit)) {
       url = `data:${mime.lookup(id)};base64,${content.toString('base64')}`
     }
 
