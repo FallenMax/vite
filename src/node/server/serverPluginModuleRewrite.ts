@@ -33,7 +33,8 @@ import {
   isExternalUrl,
   bareImportRE,
   removeUnRelatedHmrQuery,
-  isPlainObject
+  isPlainObject,
+  isImage
 } from '../utils'
 import chalk from 'chalk'
 import { isCSSRequest } from '../utils/cssUtils'
@@ -42,6 +43,7 @@ import { resolveOptimizedCacheDir } from '../optimizer'
 import { parse } from '../utils/babelParse'
 import { OptimizeAnalysisResult } from '../optimizer/entryAnalysisPlugin'
 import slash from 'slash'
+import mime from 'mime-types'
 
 const debug = require('debug')('vite:rewrite')
 
@@ -198,7 +200,37 @@ export function rewriteImports(
             timestamp
           )
 
-          if (resolved !== id) {
+          // inline static asset
+          if (isImage(resolved)) {
+            const filePath = resolver.requestToFile(
+              resolved.replace(/\?.*$/, '')
+            )
+            if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+              const content = fs.readFileSync(filePath, { encoding: 'base64' })
+              debug(`    "${id}" --> (base64)`)
+
+              const importStatement = source.substring(expStart, expEnd)
+              const [_match, binding] =
+                /^import (?:(.*) from)?/.exec(importStatement) || []
+              if (!_match) {
+                throw new Error('unknown import statement: ' + importStatement)
+              }
+              if (!binding) {
+                throw new Error('no binding? :' + importStatement)
+              }
+              const mimeType = mime.lookup(path.extname(filePath))
+              s.overwrite(
+                expStart,
+                expEnd,
+                `const ${binding} = ${JSON.stringify(
+                  `data:${mimeType};base64,` + content
+                )}`
+              )
+              hasReplaced = true
+            } else {
+              throw new Error('cannot access file: ' + filePath)
+            }
+          } else if (resolved !== id) {
             debug(`    "${id}" --> "${resolved}"`)
             if (isOptimizedCjs(root, resolver.requestToFile(importer), id)) {
               if (dynamicIndex === -1) {

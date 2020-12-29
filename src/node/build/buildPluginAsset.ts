@@ -57,7 +57,7 @@ export const resolveAsset = async (
   if (!resolved) {
     let url: string | undefined
     let content: Buffer | undefined = await fs.readFile(id)
-    if (!id.endsWith(`.svg`) && content.length < Number(inlineLimit)) {
+    if (content.length < Number(inlineLimit)) {
       url = `data:${mime.lookup(id)};base64,${content.toString('base64')}`
       content = undefined
     }

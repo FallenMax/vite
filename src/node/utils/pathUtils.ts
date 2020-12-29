@@ -60,6 +60,10 @@ export const isStaticAsset = (file: string) => {
   return imageRE.test(file) || mediaRE.test(file) || fontsRE.test(file)
 }
 
+export const isImage = (file: string) => {
+  return imageRE.test(file)
+}
+
 /**
  * Check if a request is an import from js instead of a native resource request
  * i.e. differentiate
