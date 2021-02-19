@@ -1,6 +1,6 @@
 {
   "name": "@shimo/vite",
-  "version": "0.20.2-patch.2",
+  "version": "0.20.2-patch.3",
   "license": "MIT",
   "author": "Evan You",
   "bin": {
