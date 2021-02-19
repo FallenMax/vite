@@ -1,6 +1,6 @@
-import path from 'path'
 import chalk from 'chalk'
-import { startService, Service, TransformOptions, Message } from 'esbuild'
+import { Message, Service, startService, TransformOptions } from 'esbuild'
+import path from 'path'
 import { SharedConfig } from './config'
 
 const debug = require('debug')('vite:esbuild')
@@ -73,7 +73,7 @@ export const transform = async (
       result.warnings.forEach((m) => printMessage(m, src))
     }
 
-    let code = (result.js || '').replace(sourceMapRE, '')
+    let code = (result.code || '').replace(sourceMapRE, '')
 
     // if transpiling (j|t)sx file, inject the imports for the jsx helper and
     // Fragment.
@@ -90,7 +90,7 @@ export const transform = async (
 
     return {
       code,
-      map: result.jsSourceMap
+      map: result.map
     }
   } catch (e) {
     console.error(
